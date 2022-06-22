@@ -177,6 +177,7 @@ class BaseDataLoader(object):
         seed: int = -1,
         instance_parse_function=None
     ):
+
         if instance_parse_function is None:
             instance_parse_function = self.get_parse_function()
 
@@ -202,17 +203,24 @@ class BaseDataLoader(object):
                 )['default']
                 new_instances.append(new_instance)
 
+            # printing
+            # print(f'Instances Len: {len(instances)}\tNew Instances Len: {len(new_instances)}')
+
             new_instances = tf.concat(new_instances, axis=0)
             all_instances = tf.concat((instances, new_instances), axis=0)
             train_instances = tf.gather(all_instances, train_indices, axis=0)
             val_instances = tf.gather(all_instances, val_indices, axis=0)
+
+            # printing
+            # print(f'Train Indicies: {train_indices}\tVal Indicies: {val_indices}')
+            # print(f'All Shape: {all_instances.shape}\tTrain Shape: {train_instances.shape}\t Val Shape: {val_instances.shape}')
 
             return (
                 tf.reshape(train_instances, (n, k, *train_instances.shape[1:])),
                 tf.reshape(val_instances, (n, k_validation, *val_instances.shape[1:])),
             )
 
-        instances = list()
+        instances = list() # list storing training data file names
 
         for folder, folder_instances in folders.items():
             instances.extend(folder_instances)
@@ -232,6 +240,19 @@ class BaseDataLoader(object):
 
         dataset = tf.data.Dataset.zip((dataset, labels_dataset))
         dataset = dataset.batch(meta_batch_size, drop_remainder=True)
+
+        # see contents of dataset
+        '''
+        for meta_batch in dataset.as_numpy_iterator():
+            print(meta_batch.shape)
+            for batch in meta_batch.as_numpy_iterator():
+                for element in batch.as_numpy_iterator():
+                    print(element)
+                    print(element.shape)
+                    break
+                break
+            break
+        '''
 
         setattr(dataset, 'steps_per_epoch', tf.data.experimental.cardinality(dataset))
         return dataset

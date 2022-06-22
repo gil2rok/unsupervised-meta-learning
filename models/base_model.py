@@ -84,6 +84,7 @@ class BaseModel(metaclass=SetupCaller):
         experiment_name=None,
         val_database=None,
         test_database=None,
+        num_train_classes=None,
     ):
         self.database = database
         self.val_database = val_database if val_database is not None else self.database
@@ -113,6 +114,8 @@ class BaseModel(metaclass=SetupCaller):
         self.train_summary_writer = None
         self.val_log_dir = None
         self.val_summary_writer = None
+        self.test_log_dir = None
+        self.test_summary_writer = None
         self.checkpoint_dir = None
 
         self.network_cls = network_cls
@@ -122,12 +125,16 @@ class BaseModel(metaclass=SetupCaller):
         self.val_accuracy_metric = tf.metrics.Mean()
         self.val_loss_metric = tf.metrics.Mean()
 
+        self.num_train_classes = num_train_classes
+        self.train_iterations = 0
+
     def setup(self):
         """Setup is called right after init. This is to make sure that all the required fields are assigned.
         For example, num_steps in ml is in get_config_info(), however, it is not set in __init__ of the base model
         because it is a field for maml."""
         self.train_log_dir = os.path.join(self._root, self.get_config_info(), 'logs/train/')
         self.val_log_dir = os.path.join(self._root, self.get_config_info(), 'logs/val/')
+        self.test_log_dir = os.path.join(self._root, self.get_config_info(), 'logs/test/')
         self.checkpoint_dir = os.path.join(self._root, self.get_config_info(), 'saved_models/')
 
     def init_data_loader(self, data_loader_cls):
@@ -153,7 +160,7 @@ class BaseModel(metaclass=SetupCaller):
     def get_config_info(self):
         config_info = self.get_config_str()
         if self.experiment_name is not None:
-            config_info += '_' + self.experiment_name
+            config_info = self.experiment_name + '__' + config_info
 
         return config_info
 
@@ -227,6 +234,8 @@ class BaseModel(metaclass=SetupCaller):
     def train(self, iterations=5):
         self.train_summary_writer = tf.summary.create_file_writer(self.train_log_dir)
         self.val_summary_writer = tf.summary.create_file_writer(self.val_log_dir)
+        self.train_iterations = iterations
+        
         train_dataset = self.get_train_dataset()
         iteration_count = self.load_model()
         epoch_count = iteration_count // tf.data.experimental.cardinality(train_dataset)
@@ -270,7 +279,7 @@ class BaseModel(metaclass=SetupCaller):
                     train_accuracy_metric.reset_states()
                     train_loss_metric.reset_states()
 
-                pbar.set_description_str('Epoch{}, Iteration{}: Train Loss: {}, Train Accuracy: {}'.format(
+                pbar.set_description_str('Epoch{}, Iteration{} Train Loss: {}, Train Accuracy: {}'.format(
                     epoch_count,
                     iteration_count,
                     train_loss_metric.result().numpy(),
@@ -318,6 +327,7 @@ class BaseModel(metaclass=SetupCaller):
         average and variance which they learned during the updates."""
         # TODO add ability to set batch norm momentum if use_val_batch_statistics=False
         self.test_dataset = self.get_test_dataset(num_tasks=num_tasks, seed=seed)
+        self.test_summary_writer = tf.summary.create_file_writer(self.test_log_dir)
         print(self.test_database.__class__)
         print(f'K_test: {self.k_test}')
         print(f'K_test_val: {self.k_val_test}')
@@ -331,6 +341,7 @@ class BaseModel(metaclass=SetupCaller):
             use_val_batch_statistics=use_val_batch_statistics
         )
         counter = 0
+        
         for (train_ds, val_ds), (train_labels, val_labels) in self.test_dataset:
             remainder_num = num_tasks // 20
             if remainder_num == 0:
@@ -369,6 +380,15 @@ class BaseModel(metaclass=SetupCaller):
 
         final_acc_mean = np.mean(accs)
         final_acc_std = np.std(accs)
+
+        with self.test_summary_writer.as_default():
+            tf.summary.scalar('Accuracy', final_acc_mean, step=self.train_iterations)
+
+        ## write to file ##
+        with open('class_results.txt', 'a') as file:
+            file.write(f'{self.num_train_classes}\t{final_acc_mean} +- {final_acc_std}\n')
+        
+        print(f'printed with {self.num_train_classes} classes!')
 
         print(f'{num_tasks} / {num_tasks} are evaluated.')
 

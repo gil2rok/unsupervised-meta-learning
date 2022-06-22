@@ -83,6 +83,8 @@ class MAMLUMTRA(ModelAgnosticMetaLearningModel):
         transforms = [1, 0, -tx, 0, 1, -ty, 0, 0]
         new_images = tfa.image.transform(new_images, transforms, 'NEAREST')
 
+        print('\n\n\naugmenting!\n\n\n')
+
         # Rotation
         # angles = tf.random.uniform(
         #     shape=(self.n * self.k,),

@@ -44,6 +44,7 @@ class ModelAgnosticMetaLearningModel(BaseModel):
         val_database=None,
         test_database=None,
         first_order=False,
+        num_train_classes=None,
     ):
         super(ModelAgnosticMetaLearningModel, self).__init__(
             database=database,
@@ -65,7 +66,8 @@ class ModelAgnosticMetaLearningModel(BaseModel):
             val_seed=val_seed,
             experiment_name=experiment_name,
             val_database=val_database,
-            test_database=test_database
+            test_database=test_database,
+            num_train_classes=num_train_classes
         )
 
         self.first_order = first_order
@@ -86,11 +88,12 @@ class ModelAgnosticMetaLearningModel(BaseModel):
                 layer.momentum = self.val_test_batch_norm_momentum
 
         self.only_outer_loop_update_layers = self.get_only_outer_loop_update_layers()
+        self.num_train_classes = num_train_classes
 
     def initialize_network(self):
         model = self.network_cls(num_classes=self.n)
         model(tf.zeros(shape=(1, *self.database.input_shape)))
-        model.summary()
+        #model.summary()
         return model
 
     def get_only_outer_loop_update_layers(self):
@@ -101,12 +104,13 @@ class ModelAgnosticMetaLearningModel(BaseModel):
         return self.model.name
 
     def get_config_str(self):
-        config_str = f'model-{self.get_network_name()}_' \
-               f'mbs-{self.meta_batch_size}_' \
-               f'n-{self.n}_' \
-               f'k-{self.k_ml}_' \
-               f'kvalml-{self.k_val_ml}' \
-               f'stp-{self.num_steps_ml}'
+        #config_str = f'model-{self.get_network_name()}_' \
+        #       f'mbs-{self.meta_batch_size}_' \
+        #       f'n-{self.n}_' \
+        #       f'k-{self.k_ml}_' \
+        #       f'kvalml-{self.k_val_ml}' \
+        #       f'stp-{self.num_steps_ml}'
+        config_str = f'{self.n}x{self.k_test}'
         return config_str
 
     def post_process_outer_gradients(self, outer_gradients):
@@ -129,7 +133,7 @@ class ModelAgnosticMetaLearningModel(BaseModel):
 
         for variable in self.model.variables:
             references = self.extract_variable_reference_from_variable_name(variable.name)
-            layer_names = references[:-1]
+            layer_names = references[1:2] # fixed this line
             attr = references[-1]
 
             model_layer = model
