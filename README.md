@@ -1,5 +1,5 @@
 # My Contribution
-Most of this repo was forked. I used its implementation of [UMTRA](https://arxiv.org/abs/1811.11819) to conduct unsupervised meta-learning experiments, investigating model performance when number of dataset classes is reduced.
+Most of this repo was forked. I used its implementation of [UMTRA](https://arxiv.org/abs/1811.11819) to conduct unsupervised meta-learning experiments, investigating model performance when number of dataset classes is reduced on the Omniglot dataset.
 
 A draft of my analysis is written up [here](https://drive.google.com/file/d/1at99PED5JuHT0JexlRoSx-0d3NX4MiwP/view?usp=sharing) in a NeurIPS style paper. Both the code and paper are presented 'as is'.
 
