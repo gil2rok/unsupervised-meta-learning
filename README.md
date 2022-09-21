@@ -1,3 +1,8 @@
+# My Contribution
+Most of this repo was forked. I used its implementation of [UMTRA](https://arxiv.org/abs/1811.11819) to conduct unsupervised meta-learning experiments, investigating model performance when number of dataset classes is reduced.
+
+A draft of my analysis is written up [here](https://drive.google.com/file/d/1at99PED5JuHT0JexlRoSx-0d3NX4MiwP/view?usp=sharing) in a NeurIPS style paper. Both the code and paper are presented 'as is'.
+
 # Meta Learning Framework TF 2.0
 
 This is a framework which makes it easy to apply meta-learning techniques on different datasets.
